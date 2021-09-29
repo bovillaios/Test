@@ -18,7 +18,7 @@ jobs:
       build:
         runs-on: macOS-11
         env:
-          XC_VERSION: ${{ '12.4' }}
+          XC_VERSION: ${{ '12.5.1' }}
           XC_SCHEME: ${{ github.event.inputs.flavour }}
           XC_CONFIGURATIONS: ${{ 'Release' }}
           XC_WorkSpace: ${{ 'Test.xcworkspace' }}

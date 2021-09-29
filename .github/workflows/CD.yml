@@ -21,7 +21,7 @@ jobs:
           XC_VERSION: ${{ '12.4' }}
           XC_SCHEME: ${{ github.event.inputs.flavour }}
           XC_CONFIGURATIONS: ${{ 'Release' }}
-          XC_WorkSpace: ${{ 'Scarlet.xcworkspace' }}
+          XC_WorkSpace: ${{ 'Test.xcworkspace' }}
           XC_ARCHIVE_PATH:  ${{ format('DerivedData/Archive/{0}.xcarchive', github.event.inputs.flavour) }}
           XC_EXPORT_PATH: ${{ format('DerivedData/ipa/{0}', github.event.inputs.flavour) }}
           XC_EXPORT_PATH_IPA: ${{ format('DerivedData/ipa/{0}/{1}.ipa', github.event.inputs.flavour, github.event.inputs.flavour) }}

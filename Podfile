@@ -12,9 +12,9 @@ pod 'BarcodeScanner'
 pod "GooglePlaces", "~> 3.0.3"
 pod "GooglePlacePicker", "~> 3.0.3"
 pod "GoogleMaps", "~> 3.0.3"
-pod 'Firebase/Core'
-pod 'Firebase/Messaging', '6.34.0'
-pod 'Firebase/Performance'
+pod "PINRemoteImage", "~> 3.0.3"
+pod 'Localize-Swift', '~> 2.0'
+pod "FlagPhoneNumber", '0.7.2'
 end
 
 target 'Test' do

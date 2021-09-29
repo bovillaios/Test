@@ -18,6 +18,9 @@ pod "FlagPhoneNumber", '0.7.2'
 pod "IQKeyboardManager","~> 6.2.1"
 pod 'SwiftGen', '~> 6.0'
 pod 'SwiftLint'
+pod 'Firebase/Core'
+pod 'Firebase/Messaging', '6.34.0'
+pod 'Firebase/Performance'
 end
 
 target 'Test' do

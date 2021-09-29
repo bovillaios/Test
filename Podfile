@@ -40,5 +40,6 @@ shared_pods
 end
 
 target "A1 Mercado" do
+use_frameworks!
 shared_pods
 end

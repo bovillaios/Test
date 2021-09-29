@@ -45,8 +45,6 @@ jobs:
             curl -o ./.github/secrets/Certificates.zip "$CERTIFICATE_URL"
             unzip -o ./.github/secrets/Certificates.zip -d ./.github/secrets
             removespace=$(echo $XC_SCHEME | sed 's/ //')
-            sudo rm -f "./Common/Assets.xcassets/AppIcons_$removespace.appiconset"
-            cp -r "${{ format('./.github/secrets/{0}/AppIcon/', github.event.inputs.foldername) }}" "./Common/Assets.xcassets/AppIcons_$removespace.appiconset"
         - name: Select latest Xcode
           run: "sudo xcode-select -s /Applications/Xcode_$XC_VERSION.app"
         - name: Configure Keychain

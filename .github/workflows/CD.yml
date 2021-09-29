@@ -1,0 +1,89 @@
+name: Archive and Export
+on:
+   workflow_dispatch:
+     inputs:
+       flavour:
+         description: 'Flavour'
+         required: true
+         default: 'A1 Mercado'
+       foldername:
+         description: 'Folder Name'
+         required: true
+         default: 'A1Mercado'
+       flavoururl:
+         description: 'Flavour URL'
+         required: true
+         default: 'https://storage.googleapis.com/zopping-assets/ios/A1Mercado.zip'
+jobs:
+      build:
+        runs-on: self-hosted
+        env:
+          XC_VERSION: ${{ '12.4' }}
+          XC_SCHEME: ${{ github.event.inputs.flavour }}
+          XC_CONFIGURATIONS: ${{ 'Release' }}
+          XC_WorkSpace: ${{ 'Scarlet.xcworkspace' }}
+          XC_ARCHIVE_PATH:  ${{ format('DerivedData/Archive/{0}.xcarchive', github.event.inputs.flavour) }}
+          XC_EXPORT_PATH: ${{ format('DerivedData/ipa/{0}', github.event.inputs.flavour) }}
+          XC_EXPORT_PATH_IPA: ${{ format('DerivedData/ipa/{0}/{1}.ipa', github.event.inputs.flavour, github.event.inputs.flavour) }}
+          XC_EXPORT_OPTIONS_FILE_PATH:  ${{ format('.github/secrets/{0}/ExportOptions.plist', github.event.inputs.foldername) }}
+          ENCRYPTED_CERTS_FILE_PATH:  ${{ format('.github/secrets/{0}/myCert.p12.gpg', github.event.inputs.foldername) }}
+          DECRYPTED_CERTS_FILE_PATH:  ${{ format('.github/secrets/{0}/myCert.p12', github.event.inputs.foldername) }}
+          ENCRYPTED_PROVISION_FILE_PATH: ${{ format('.github/secrets/{0}/{0}.mobileprovision.gpg', github.event.inputs.foldername) }}
+          DECRYPTED_PROVISION_FILE_PATH: ${{ format('.github/secrets/{0}/{0}.mobileprovision', github.event.inputs.foldername) }}
+          CERTS_ENCRYPTION_PWD: ${{ secrets.PROVISIONING_PASSWORD }}
+          PROVISION_ENCRYPTION_PWD: ${{ secrets.PROVISIONING_PASSWORD }}
+          CERTS_EXPORT_PWD: ${{ secrets.PROVISIONING_PASSWORD }}
+          KEYCHAIN: ${{ format('test1.keychain') }}
+          APPLEID_USERNAME: ${{ secrets.APPLEID_USERNAME }}
+          APPLEID_PASSWORD: ${{ secrets.APPLEID_PASSWORD }}
+          CERTIFICATE_URL: ${{ github.event.inputs.flavoururl }}
+          
+        steps:
+        - uses: actions/checkout@v2
+        - name: Download Certificate
+          run: |
+            curl -o ./.github/secrets/Certificates.zip "$CERTIFICATE_URL"
+            unzip -o ./.github/secrets/Certificates.zip -d ./.github/secrets
+            removespace=$(echo $XC_SCHEME | sed 's/ //')
+            sudo rm -f "./Common/Assets.xcassets/AppIcons_$removespace.appiconset"
+            cp -r "${{ format('./.github/secrets/{0}/AppIcon/', github.event.inputs.foldername) }}" "./Common/Assets.xcassets/AppIcons_$removespace.appiconset"
+        - name: Select latest Xcode
+          run: "sudo xcode-select -s /Applications/Xcode.app"
+        - name: Configure Keychain
+          run: |
+                  rm -rf ~/Library/Keychains/test1.keychain-db
+                  security create-keychain -p "" "$KEYCHAIN"
+                  security list-keychains -s "$KEYCHAIN"
+                  security unlock-keychain -p "" "$KEYCHAIN"
+                  security set-keychain-settings
+                  security list-keychains
+        - name : Configure Code Signing
+          run: |
+                  gpg -d -o "$DECRYPTED_CERTS_FILE_PATH" --pinentry-mode=loopback --passphrase "$CERTS_ENCRYPTION_PWD" "$ENCRYPTED_CERTS_FILE_PATH"
+                  gpg -d -o "$DECRYPTED_PROVISION_FILE_PATH" --pinentry-mode=loopback --passphrase "$PROVISION_ENCRYPTION_PWD" "$ENCRYPTED_PROVISION_FILE_PATH"
+                  security import "$DECRYPTED_CERTS_FILE_PATH" -k "$KEYCHAIN" -P "$CERTS_EXPORT_PWD" -A
+                  security import ./.github/secrets/AppleWWDRCAG3.cer -k "$KEYCHAIN" -A
+                  security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN"
+                  mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+                  cd "${{ format('.github/secrets/{0}', github.event.inputs.foldername) }}"
+                  for PROVISION in `ls *.mobileprovision`
+                  do
+                    UUID=`/usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin <<< $(security cms -D -i ./$PROVISION)`
+                    cp "./$PROVISION" "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.mobileprovision"
+                   done
+        - name: Pod De Integrate
+          run: pod deintegrate
+        - name: Pod Run
+          run: pod install
+                   
+        - name: Archive
+          run: |
+                  /usr/bin/xcodebuild archive -sdk iphoneos -workspace "$XC_WorkSpace" -scheme "$XC_SCHEME" -configuration "$XC_CONFIGURATIONS" -archivePath "$XC_ARCHIVE_PATH" "OTHER_CODE_SIGN_FLAGS=--keychain '$KEYCHAIN'"
+        - name: Export for App Store
+          run: |
+                  xcodebuild -exportArchive -archivePath "$XC_ARCHIVE_PATH" -exportOptionsPlist "$XC_EXPORT_OPTIONS_FILE_PATH" -exportPath "$XC_EXPORT_PATH"
+        - name: Dump file hierarchy
+          run: ls -R
+        - name: Upload AppStore
+          run: |
+                  xcrun altool --upload-app -t ios -f "$XC_EXPORT_PATH_IPA" -u "$APPLEID_USERNAME" -p "$APPLEID_PASSWORD" --verbose

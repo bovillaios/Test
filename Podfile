@@ -15,6 +15,9 @@ pod "GoogleMaps", "~> 3.0.3"
 pod "PINRemoteImage", "~> 3.0.3"
 pod 'Localize-Swift', '~> 2.0'
 pod "FlagPhoneNumber", '0.7.2'
+pod "IQKeyboardManager","~> 6.2.1"
+pod 'SwiftGen', '~> 6.0'
+pod 'SwiftLint'
 end
 
 target 'Test' do
